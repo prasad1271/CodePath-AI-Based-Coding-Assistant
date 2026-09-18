@@ -75,6 +75,21 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 # ------------------------------------------------------------
 # Render Production Health & Readiness Endpoints
 # ------------------------------------------------------------
+@app.get("/", tags=["Root"])
+def root():
+    """
+    Root status endpoint displaying API information and docs.
+    """
+    return {
+        "service": "CodePath API",
+        "description": "AI-Powered Programming & Career Assistant Backend",
+        "status": "operational",
+        "docs": "/api/docs",
+        "health": "/health",
+        "environment": settings.ENVIRONMENT
+    }
+
+
 @app.get("/health", tags=["Health"])
 def health_check():
     """

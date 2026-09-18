@@ -17,7 +17,7 @@ router = APIRouter(prefix="/interviews", tags=["AI Mock Interviews"])
 
 
 @router.post("/start", response_model=ApiResponse[InterviewSessionResponse])
-def start_interview(
+async def start_interview(
     payload: InterviewStartRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -31,25 +31,8 @@ def start_interview(
     db.add(interview)
     db.flush()
 
-    # Pre-generate 3 domain questions
-    if payload.mode == "HR":
-        q_texts = [
-            "Tell me about a challenging engineering project where you had to learn a technology on a tight deadline.",
-            "How do you handle disagreement with a teammate over technical architecture?",
-            "Where do you see your technical trajectory in the next 3 years?"
-        ]
-    elif payload.mode == "DSA":
-        q_texts = [
-            "Explain how a Hash Map handles collision resolution internally using Chaining vs Open Addressing.",
-            "Compare Quick Sort and Merge Sort in terms of time complexity, stability, and cache locality.",
-            "How would you detect a cycle in a singly linked list using constant O(1) space?"
-        ]
-    else:
-        q_texts = [
-            f"For a {payload.target_role} role, how do you design a high-throughput REST API that remains resilient under traffic spikes?",
-            "Explain the difference between optimistic and pessimistic locking in database transactions.",
-            "How do you profile and eliminate memory leaks or slow database queries in production?"
-        ]
+    # Generate progressive questions tailored to candidate role
+    q_texts = await AIService.generate_interview_questions(payload.target_role, payload.mode)
 
     for i, q in enumerate(q_texts):
         iq = InterviewQuestion(

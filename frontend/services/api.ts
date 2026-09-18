@@ -163,6 +163,32 @@ class ApiClient {
     });
   }
 
+  async reviewCodeSubmission(slug: string, code: string, language: string = "python", problem_title?: string, problem_description?: string): Promise<any> {
+    return this.request<any>(`/practice/problems/${slug}/ai-review`, {
+      method: "POST",
+      body: JSON.stringify({ code, language, problem_title: problem_title || slug, problem_description }),
+    });
+  }
+
+  async explainLesson(lesson_slug: string, student_question: string, lesson_title?: string, lesson_content?: string, language?: string): Promise<any> {
+    return this.request<any>(`/learning/lessons/${lesson_slug}/ai-explain`, {
+      method: "POST",
+      body: JSON.stringify({
+        student_question,
+        lesson_title: lesson_title || lesson_slug,
+        lesson_content: lesson_content || "",
+        language: language || "python",
+      }),
+    });
+  }
+
+  async getAiCareerAssessment(target_role?: string, skills?: string[], solved_problems_count?: number, projects?: any[]): Promise<any> {
+    return this.request<any>("/career/ai-assessment", {
+      method: "POST",
+      body: JSON.stringify({ target_role, skills, solved_problems_count, projects }),
+    });
+  }
+
   // DSA
   async getDsaTopics(): Promise<DsaTopic[]> {
     return this.request<DsaTopic[]>("/dsa/topics");

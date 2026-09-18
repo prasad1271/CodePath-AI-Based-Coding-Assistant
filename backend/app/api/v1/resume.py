@@ -75,26 +75,20 @@ async def analyze_resume(current_user: User = Depends(get_current_user), db: Ses
 
 
 @router.post("/improve-bullet", response_model=ApiResponse[BulletImproveResponse])
-def improve_bullet_point(payload: BulletImproveRequest, current_user: User = Depends(get_current_user)):
+async def improve_bullet_point(payload: BulletImproveRequest, current_user: User = Depends(get_current_user)):
     """
-    Refines student-provided bullet points using active action verbs and quantitative impact.
-    Strictly avoids fabricating unverified metrics.
+    Refines student-provided bullet points using Google XYZ formula and powerful action verbs.
     """
-    orig = payload.original_bullet.strip()
-    words = orig.split()
-    action_verbs = ["Architected", "Spearheaded", "Engineered", "Implemented", "Streamlined", "Optimized"]
-
-    improved = [
-        f"Engineered {orig.lower() if orig else 'project component'} using modern design patterns, improving code modularity and maintainability.",
-        f"Implemented robust validation and error handling for {orig.lower() if orig else 'system feature'}, ensuring 99.9% uptime across local test suites.",
-        f"Optimized computational workflow for {orig.lower() if orig else 'application module'}, reducing average latency and resource consumption."
-    ]
+    res = await AIService.improve_resume_bullet(
+        original_bullet=payload.original_bullet,
+        role_or_project_context=payload.role_or_project_context
+    )
 
     return ApiResponse(
         success=True,
         data=BulletImproveResponse(
-            original_bullet=orig,
-            improved_bullets=improved,
-            rationale="Transformed passive descriptions into results-driven statements led by strong technical action verbs without altering factual context."
+            original_bullet=res["original_bullet"],
+            improved_bullets=res["improved_bullets"],
+            rationale=res["rationale"]
         )
     )

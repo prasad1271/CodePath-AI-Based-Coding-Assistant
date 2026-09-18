@@ -12,6 +12,13 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./codepath_dev.db"
 
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def assemble_db_url(cls, v: str) -> str:
+        if v and v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql://", 1)
+        return v
+
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,https://codepath.vercel.app"
 
@@ -25,7 +32,8 @@ class Settings(BaseSettings):
     # AI Service
     AI_PROVIDER: str = "mock"  # gemini, openai, anthropic, mock
     AI_API_KEY: str = ""
-    AI_MODEL_NAME: str = "gemini-1.5-flash"
+    AI_MODEL_NAME: str = "gemini-3.6-flash"
+    GOOGLE_PROJECT_NUMBER: str = ""
     AI_MAX_TOKENS: int = 1500
     AI_TEMPERATURE: float = 0.7
 

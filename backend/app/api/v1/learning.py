@@ -6,8 +6,10 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.learning import Course, Module, Lesson, Progress
 from app.schemas.learning import CourseResponse, ModuleResponse, LessonDetailResponse, ProgressUpdate
+from app.schemas.ai import AiLessonExplainRequest, AiLessonExplainResponse
 from app.schemas.common import ApiResponse
 from app.services.readiness_service import CareerReadinessService
+from app.services.ai_service import AIService
 
 router = APIRouter(prefix="/learning", tags=["Learning Courses"])
 
@@ -146,3 +148,32 @@ def complete_lesson(
     # Recalculate readiness
     readiness = CareerReadinessService.calculate_user_readiness(db, current_user.id)
     return ApiResponse(success=True, data={"status": "completed", "career_readiness": readiness})
+
+
+@router.post("/lessons/{lesson_slug}/ai-explain", response_model=ApiResponse[AiLessonExplainResponse])
+async def ai_explain_lesson(
+    lesson_slug: str,
+    payload: AiLessonExplainRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    lesson = db.query(Lesson).filter(Lesson.slug == lesson_slug).first()
+    title = lesson.title if lesson else payload.lesson_title
+    content = lesson.content if lesson else payload.lesson_content
+
+    result = await AIService.explain_lesson_concept(
+        lesson_title=title,
+        lesson_content=content,
+        student_question=payload.student_question,
+        language=payload.language or "python"
+    )
+
+    return ApiResponse(
+        success=True,
+        data=AiLessonExplainResponse(
+            explanation=result["explanation"],
+            key_takeaways=result.get("key_takeaways", []),
+            sample_code=result.get("sample_code"),
+            challenge_question=result.get("challenge_question")
+        )
+    )

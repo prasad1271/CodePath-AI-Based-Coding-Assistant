@@ -10,8 +10,10 @@ from app.schemas.practice import (
     CodeRunRequest, CodeRunResponse, SubmissionCreate, SubmissionResponse
 )
 from app.schemas.common import ApiResponse
+from app.schemas.ai import AiCodeReviewRequest, AiCodeReviewResponse
 from app.services.code_executor import CodeExecutorService
 from app.services.readiness_service import CareerReadinessService
+from app.services.ai_service import AIService
 
 router = APIRouter(prefix="/practice", tags=["Coding Practice"])
 
@@ -174,4 +176,28 @@ def submit_solution(
     return ApiResponse(
         success=True,
         data=SubmissionResponse.from_orm(submission)
+    )
+
+
+@router.post("/problems/{slug}/ai-review", response_model=ApiResponse[AiCodeReviewResponse])
+async def review_problem_code(
+    slug: str,
+    payload: AiCodeReviewRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    problem = db.query(Problem).filter(Problem.slug == slug).first()
+    title = problem.title if problem else payload.problem_title
+    desc = problem.description if problem else payload.problem_description
+
+    review = await AIService.review_code_submission(
+        problem_title=title,
+        problem_description=desc or "",
+        code=payload.code,
+        language=payload.language
+    )
+
+    return ApiResponse(
+        success=True,
+        data=AiCodeReviewResponse(**review)
     )

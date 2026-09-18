@@ -25,14 +25,17 @@ class ErrorDoctorRequest(BaseModel):
 
 
 class ErrorDoctorResponse(BaseModel):
-    error_type: str
-    what_happened: str
-    why_it_happened: str
-    where_it_happened: str
-    how_to_fix: str
-    corrected_example: str
-    prevention_tip: str
-    practice_question: str
+    error_type: str = "Syntax or Runtime Error"
+    what_happened: str = "An error occurred during code analysis or execution."
+    why_it_happened: str = "Language constraints or runtime rules were violated."
+    where_it_happened: str = "Unknown location"
+    how_to_fix: str = "Inspect the indicated line and rectify syntax, types, or control logic."
+    corrected_example: str = ""
+    prevention_tip: str = "Use static type analysis, defensive boundary checks, and automated linters."
+    practice_question: str = "How can you prevent similar errors when structuring this logic?"
+    rectified_code: Optional[str] = None
+    line_number: Optional[int] = None
+    severity: Optional[str] = "error"
 
 
 class AiHintRequest(BaseModel):
@@ -47,3 +50,51 @@ class AiHintResponse(BaseModel):
     hint: str
     guiding_question: str
     concept_to_review: str
+
+
+class AiCodeReviewRequest(BaseModel):
+    problem_title: str
+    problem_description: Optional[str] = ""
+    code: str
+    language: str = "python"
+
+
+class AiCodeReviewResponse(BaseModel):
+    time_complexity: str
+    space_complexity: str
+    time_analysis: str
+    space_analysis: str
+    strengths: List[str] = []
+    edge_cases: List[str] = []
+    clean_code_tips: List[str] = []
+    optimization_suggestion: str
+
+
+class AiLessonExplainRequest(BaseModel):
+    lesson_title: str
+    lesson_content: str
+    student_question: str
+    language: Optional[str] = "python"
+
+
+class AiLessonExplainResponse(BaseModel):
+    explanation: str
+    key_takeaways: List[str] = []
+    sample_code: Optional[str] = None
+    challenge_question: Optional[str] = None
+
+
+class AiCareerAssessmentRequest(BaseModel):
+    target_role: str = "Full Stack Engineer"
+    skills: List[str] = []
+    solved_problems_count: int = 0
+    projects: List[dict] = []
+
+
+class AiCareerAssessmentResponse(BaseModel):
+    readiness_score: float
+    target_role: str
+    top_strengths: List[str] = []
+    critical_skill_gaps: List[str] = []
+    recommended_projects: List[dict] = []
+    weekly_action_plan: List[str] = []

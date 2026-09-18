@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   Compass, ArrowLeft, CheckCircle2, Code, Layers,
-  Terminal, ShieldCheck, GraduationCap, Github, FileText
+  Terminal, ShieldCheck, GraduationCap, Github, FileText,
+  Sparkles, Loader2, Award, Target, AlertCircle
 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -20,6 +21,10 @@ export default function CareerRoleDetailPage() {
   const [career, setCareer] = useState<CareerPath | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Gemini AI Career Assessment
+  const [isAssessing, setIsAssessing] = useState(false);
+  const [assessmentResult, setAssessmentResult] = useState<any>(null);
+
   useEffect(() => {
     if (slug) {
       api.getCareerPath(slug)
@@ -28,6 +33,24 @@ export default function CareerRoleDetailPage() {
         .finally(() => setLoading(false));
     }
   }, [slug]);
+
+  const handleRunAssessment = async () => {
+    if (!career) return;
+    setIsAssessing(true);
+    try {
+      const res = await api.getAiCareerAssessment(
+        career.title,
+        career.required_languages || [],
+        15,
+        []
+      );
+      setAssessmentResult(res);
+    } catch (err: any) {
+      console.error("Career assessment error:", err);
+    } finally {
+      setIsAssessing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -70,7 +93,100 @@ export default function CareerRoleDetailPage() {
               {career.description}
             </p>
           </div>
+
+          <Button
+            onClick={handleRunAssessment}
+            disabled={isAssessing}
+            className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-4 h-9 shadow-lg shrink-0"
+          >
+            {isAssessing ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                Gemini Analyzing Readiness...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                Evaluate My Readiness (Gemini)
+              </>
+            )}
+          </Button>
         </div>
+
+        {/* Gemini Assessment Result Card */}
+        {assessmentResult && (
+          <Card className="border border-purple-800/50 bg-gradient-to-br from-purple-950/20 via-slate-900/90 to-slate-950 p-6 space-y-4 animate-in fade-in duration-300 shadow-xl">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-purple-800/40 pb-3">
+              <div className="flex items-center space-x-2">
+                <Target className="w-5 h-5 text-purple-400" />
+                <div>
+                  <h2 className="text-base font-bold text-white">Gemini Career Readiness Audit</h2>
+                  <p className="text-slate-400 text-[11px]">AI gap analysis for {career.title}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-slate-400">Match Score:</span>
+                <span className="text-2xl font-extrabold font-mono text-purple-300">
+                  {assessmentResult.readiness_score || 75}%
+                </span>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+                <span className="font-semibold text-emerald-400 block flex items-center space-x-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Demonstrated Strengths</span>
+                </span>
+                <ul className="space-y-1 list-disc pl-4 text-slate-300">
+                  {(assessmentResult.top_strengths || assessmentResult.strengths || ["Foundational programming proficiency"]).map((s: string, i: number) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+                <span className="font-semibold text-amber-400 block flex items-center space-x-1.5">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>High Priority Missing Skills</span>
+                </span>
+                <ul className="space-y-1 list-disc pl-4 text-slate-300">
+                  {(assessmentResult.critical_skill_gaps || assessmentResult.missing_critical_skills || ["Production CI/CD pipelines", "System design & caching"]).map((m: string, i: number) => (
+                    <li key={i}>{m}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {assessmentResult.weekly_action_plan && assessmentResult.weekly_action_plan.length > 0 && (
+              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2 text-xs">
+                <span className="font-semibold text-blue-300 block">🗓️ 4-Week Accelerant Plan:</span>
+                <div className="grid sm:grid-cols-2 gap-2 text-slate-300">
+                  {assessmentResult.weekly_action_plan.map((step: string, idx: number) => (
+                    <div key={idx} className="p-2 rounded bg-slate-900 border border-slate-800 text-[11px]">
+                      <strong className="text-blue-400">Week {idx + 1}:</strong> {step}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {assessmentResult.recommended_projects && assessmentResult.recommended_projects.length > 0 && (
+              <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-800/30 text-xs text-purple-200 space-y-2">
+                <strong className="text-purple-300 font-semibold block">🚀 Recommended Standout Capstone Project:</strong>
+                {typeof assessmentResult.recommended_projects[0] === "string" ? (
+                  <p>{assessmentResult.recommended_projects[0]}</p>
+                ) : (
+                  <div>
+                    <div className="font-bold text-white">{assessmentResult.recommended_projects[0].title}</div>
+                    <div className="text-[11px] text-purple-300 mt-0.5">Tech: {assessmentResult.recommended_projects[0].tech_stack}</div>
+                    <div className="text-[11px] text-slate-300 mt-1">{assessmentResult.recommended_projects[0].why_it_matters}</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* 6 Grid Sections of Career Expectations */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 text-xs">

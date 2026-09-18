@@ -24,7 +24,11 @@ services:
       - key: CORS_ORIGINS
         sync: false
       - key: AI_PROVIDER
-        value: mock
+        value: gemini
+      - key: AI_MODEL_NAME
+        value: gemini-flash-lite-latest
+      - key: GOOGLE_PROJECT_NUMBER
+        value: "755501377530"
       - key: AI_API_KEY
         sync: false
       - key: CODE_EXECUTION_SANDBOX_ENABLED

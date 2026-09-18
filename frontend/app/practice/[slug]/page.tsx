@@ -28,6 +28,13 @@ export default function ProblemSolverPage() {
   const [showHints, setShowHints] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
 
+  // Gemini AI Features
+  const [isReviewing, setIsReviewing] = useState(false);
+  const [codeReview, setCodeReview] = useState<any>(null);
+  const [isGettingAiHint, setIsGettingAiHint] = useState(false);
+  const [aiHintData, setAiHintData] = useState<any>(null);
+  const [hintsGivenCount, setHintsGivenCount] = useState(0);
+
   useEffect(() => {
     if (slug) {
       api.getProblem(slug)
@@ -63,6 +70,40 @@ export default function ProblemSolverPage() {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleReviewCode = async () => {
+    if (!problem || !currentCode.trim()) return;
+    setIsReviewing(true);
+    try {
+      const review = await api.reviewCodeSubmission(
+        slug,
+        currentCode,
+        selectedLang,
+        problem.title,
+        problem.description
+      );
+      setCodeReview(review);
+    } catch (err: any) {
+      console.error("AI code review error:", err);
+    } finally {
+      setIsReviewing(false);
+    }
+  };
+
+  const handleGetAiHint = async () => {
+    if (!problem) return;
+    setIsGettingAiHint(true);
+    try {
+      const nextLevel = hintsGivenCount + 1;
+      const hint = await api.getAiHint(problem.title, currentCode, "", hintsGivenCount);
+      setAiHintData(hint);
+      setHintsGivenCount(nextLevel);
+    } catch (err: any) {
+      console.error("AI hint error:", err);
+    } finally {
+      setIsGettingAiHint(false);
     }
   };
 
@@ -107,6 +148,26 @@ export default function ProblemSolverPage() {
           </Link>
 
           <div className="flex items-center space-x-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleReviewCode}
+              disabled={isReviewing || !currentCode.trim()}
+              className="border-purple-600/50 hover:bg-purple-950/40 text-purple-300 text-xs px-3.5 h-8 shadow-sm transition-all"
+            >
+              {isReviewing ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin text-purple-400" />
+                  Gemini Analyzing Code...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5 text-purple-400" />
+                  AI Code Review
+                </>
+              )}
+            </Button>
+
             <Button
               size="sm"
               onClick={handleSubmit}
@@ -222,6 +283,52 @@ export default function ProblemSolverPage() {
                     )}
                   </div>
                 )}
+
+                {/* Gemini AI Socratic Hint Engine */}
+                <div className="pt-3 border-t border-slate-800/90 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-200 flex items-center space-x-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Gemini Socratic Tutor</span>
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleGetAiHint}
+                      disabled={isGettingAiHint}
+                      className="h-7 text-[11px] border-indigo-600/40 hover:bg-indigo-950/30 text-indigo-300"
+                    >
+                      {isGettingAiHint ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          Thinking...
+                        </>
+                      ) : (
+                        <>
+                          <Lightbulb className="w-3 h-3 mr-1 text-amber-400" />
+                          {hintsGivenCount === 0 ? "Ask for Hint (Level 1)" : `Next Hint (Level ${hintsGivenCount + 1})`}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {aiHintData && (
+                    <div className="p-3.5 rounded-xl bg-indigo-950/20 border border-indigo-800/40 text-xs space-y-2 animate-in fade-in">
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className="text-[10px] border-indigo-500/50 text-indigo-300">
+                          Hint Level {aiHintData.hint_level} of 3
+                        </Badge>
+                        <span className="text-[10px] font-mono text-slate-400">Concept: {aiHintData.concept_to_review}</span>
+                      </div>
+                      <p className="text-slate-200 leading-relaxed">{aiHintData.hint}</p>
+                      {aiHintData.guiding_question && (
+                        <div className="p-2 rounded bg-indigo-900/30 border border-indigo-700/30 text-indigo-200 text-[11px]">
+                          <strong>Guiding Question:</strong> {aiHintData.guiding_question}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -234,6 +341,56 @@ export default function ProblemSolverPage() {
               height="450px"
               onCodeChange={(val) => setCurrentCode(val)}
             />
+
+            {/* Gemini AI Code Review Drawer */}
+            {codeReview && (
+              <Card className="border border-purple-800/50 bg-gradient-to-br from-purple-950/30 via-slate-900/90 to-slate-950 p-5 space-y-4 animate-in fade-in duration-300 shadow-xl">
+                <div className="flex items-center justify-between border-b border-purple-800/40 pb-3">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <span className="font-bold text-sm text-white">Gemini Automated Code Review</span>
+                  </div>
+                  <Badge variant="outline" className="border-purple-500 text-purple-300 text-xs">
+                    Clean Code Score: {codeReview.clean_code_score || 90}/100
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800">
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Time Complexity</span>
+                    <span className="text-sm font-mono font-bold text-blue-400">{codeReview.time_complexity || "O(N)"}</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800">
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Space Complexity</span>
+                    <span className="text-sm font-mono font-bold text-indigo-400">{codeReview.space_complexity || "O(1)"}</span>
+                  </div>
+                </div>
+
+                {codeReview.suggestions && codeReview.suggestions.length > 0 && (
+                  <div className="space-y-1.5 text-xs">
+                    <span className="font-semibold text-slate-300 block">Suggestions & Optimizations:</span>
+                    <ul className="space-y-1 list-disc pl-4 text-slate-300">
+                      {codeReview.suggestions.map((s: string, idx: number) => (
+                        <li key={idx}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {codeReview.edge_cases_to_consider && codeReview.edge_cases_to_consider.length > 0 && (
+                  <div className="space-y-1.5 text-xs">
+                    <span className="font-semibold text-amber-300 block">Edge Cases to Consider:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {codeReview.edge_cases_to_consider.map((ec: string, idx: number) => (
+                        <span key={idx} className="px-2 py-0.5 rounded bg-amber-950/30 border border-amber-800/40 text-amber-200 text-[11px] font-mono">
+                          {ec}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            )}
 
             {/* Submission Result Drawer */}
             {submissionResult && (

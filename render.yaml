@@ -35,3 +35,28 @@ services:
         value: "True"
       - key: CODE_EXECUTION_TIMEOUT_SECONDS
         value: "8"
+
+  - type: web
+    name: codepath-frontend
+    runtime: node
+    rootDir: frontend
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20.14.0
+      - key: NEXT_PUBLIC_API_URL
+        value: https://codepath-backend-s8tj.onrender.com/api/v1
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://zwagbbmxckiinpacawkr.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        value: sb_publishable_ZyOP2Eu5R4C1cMDLhPWjXw_BqUMOCcK
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable_ZyOP2Eu5R4C1cMDLhPWjXw_BqUMOCcK
+      - key: NEXT_PUBLIC_APP_NAME
+        value: CodePath
+      - key: NEXT_PUBLIC_APP_TAGLINE
+        value: "Learn to Code. Build Projects. Become Career Ready."
+
